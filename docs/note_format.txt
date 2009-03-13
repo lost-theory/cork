@@ -1,0 +1,17 @@
+Cork notes are written in YAML syntax with a few custom tags. Let's start with
+a simple note.
+  >>> from cork import parse_note
+  >>> n1 = parse_note("""\
+  ... title: Hello world
+  ... format: A cork note
+  ... """)
+  >>> n1
+  <CorkNote object at 0x...>
+  >>> len(n1)
+  2
+  >>> sorted(n1.keys())
+  ['format', 'title']
+  >>> n1['title']
+  'Hello world'
+  >>> n1['format']
+  'A cork note'
