@@ -6,7 +6,7 @@ a simple note.
   ... format: A cork note
   ... """)
   >>> n1
-  <CorkNote object at 0x...>
+  <CorkNote at 0x...>
   >>> len(n1)
   2
   >>> sorted(n1.keys())
@@ -15,3 +15,32 @@ a simple note.
   'Hello world'
   >>> n1['format']
   'A cork note'
+
+Notes act like a dict (the CorkNote class is actually derived from dict). They
+can embed Python code using the "!py" tag:
+  >>> n2 = parse_note("""\
+  ... answer: !py |
+  ...   def __call__(note):
+  ...     return '42'
+  ... """)
+  >>> n2['answer']
+  <CorkMethod at 0x...>
+  >>> n2['answer']()
+  '42'
+
+This works by taking the string value after the "!py" tag, running it through
+compile() and eval() and grabbing __call__ from the resulting dict. You can
+write whatever you want inside that code block, as long as it has a __call__
+method that takes at least one positional argument.
+
+That first argument is akin to class methods' "self": it's the CorkNote object
+that contains our code block. We can access it from within the method:
+  >>> n3 = parse_note("""\
+  ... old_description: Harmless
+  ... new_description: Mostly harmless
+  ... describe: !py |
+  ...   def __call__(note, new=False):
+  ...     return note['new_description' if new else 'old_description']
+  ... """)
+  >>> n3['describe'](), n3['describe'](True)
+  ('Harmless', 'Mostly harmless')
