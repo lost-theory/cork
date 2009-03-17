@@ -3,7 +3,7 @@ import doctest
 from os.path import normpath, dirname, join
 
 suite = unittest.TestSuite()
-for fname in ['note_format.txt', 'repository.txt']:
+for fname in ['note_format.txt', 'repository.txt', 'wsgi.txt']:
     doc_file = normpath(join(dirname(__file__), '../docs/%s' % fname))
     text = open(doc_file, 'rb').read().decode('utf-8')
     doc_test = doctest.DocTestParser().get_doctest(text, {}, fname, fname, 0)

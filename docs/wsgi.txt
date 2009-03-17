@@ -1,0 +1,45 @@
+Cork repositories implement the WSGI protocol. CorkRepo.wsgi is a WSGI
+application.
+  >>> import cork
+  >>> from tempfile import mkdtemp
+  >>> repo_dir = mkdtemp()
+  >>> def write_note(name, data):
+  ...   f = open(repo_dir + name, 'wb')
+  ...   f.write(data.encode('utf-8'))
+  ...   f.close()
+  ... 
+  >>> my_repo = cork.open_repo(repo_dir)
+  >>> my_repo.wsgi
+  <bound method CorkRepo.wsgi of <CorkRepo at "...">>
+
+Let's set up a test server for our application. The "wsgiref" module makes it
+easy. We use the "validator" middleware to check our app's conformance.
+  >>> import sys
+  >>> from StringIO import StringIO
+  >>> from wsgiref.handlers import SimpleHandler
+  >>> from wsgiref.validate import validator
+  >>> env = dict(SERVER_PROTOCOL='HTTP/1.0',
+  ...     SCRIPT_NAME='', PATH_INFO='/thepage',
+  ...     REQUEST_METHOD='GET', SERVER_NAME='doctest', SERVER_PORT='80',
+  ...     QUERY_STRING='')
+  >>> server = SimpleHandler(StringIO(), sys.stdout, sys.stderr, env)
+  >>> server.run(validator(my_repo.wsgi))
+  HTTP/1.0 404 Not Found...
+
+We requested a note called '/thepage', which doesn't exist, so we got a 404
+error. Let's create the note and see what is returned.
+  >>> write_note('/thepage.note', """\
+  ... a: b
+  ... """)
+  >>> server.run(validator(my_repo.wsgi))
+  HTTP/1.0 200 OK...
+  {a: b}
+  >>> pass
+
+The web URI namespace maps directly to
+the repository namespace – in other words, if you ask for the page '/idefix',
+you will reach the note 'idefix' in the repository root.
+
+And, of course, we clean up the test folder.
+  >>> from shutil import rmtree
+  >>> rmtree(repo_dir)
