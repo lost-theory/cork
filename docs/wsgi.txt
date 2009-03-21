@@ -14,16 +14,14 @@ application.
 
 Let's set up a test server for our application. The "wsgiref" module makes it
 easy. We use the "validator" middleware to check our app's conformance.
-  >>> import sys
-  >>> from StringIO import StringIO
-  >>> from wsgiref.handlers import SimpleHandler
-  >>> from wsgiref.validate import validator
-  >>> env = dict(SERVER_PROTOCOL='HTTP/1.0',
-  ...     SCRIPT_NAME='', PATH_INFO='/thepage',
-  ...     REQUEST_METHOD='GET', SERVER_NAME='doctest', SERVER_PORT='80',
-  ...     QUERY_STRING='')
-  >>> server = SimpleHandler(StringIO(), sys.stdout, sys.stderr, env)
-  >>> server.run(validator(my_repo.wsgi))
+  >>> import sys, StringIO
+  >>> import wsgiref.handlers, wsgiref.validate, wsgiref.util
+  >>> env = {'PATH_INFO': '/thepage', 'SCRIPT_NAME': '', 'QUERY_STRING': ''}
+  >>> wsgiref.util.setup_testing_defaults(env)
+  >>> server = wsgiref.handlers.SimpleHandler(StringIO.StringIO(),
+  ...     sys.stdout, sys.stderr, env)
+  >>> repo_app = wsgiref.validate.validator(my_repo.wsgi)
+  >>> server.run(repo_app)
   HTTP/1.0 404 Not Found...
 
 We requested a note called '/thepage', which doesn't exist, so we got a 404
@@ -31,14 +29,24 @@ error. Let's create the note and see what is returned.
   >>> write_note('/thepage.note', """\
   ... a: b
   ... """)
-  >>> server.run(validator(my_repo.wsgi))
+  >>> server.run(repo_app)
   HTTP/1.0 200 OK...
   {a: b}
   >>> pass
 
-The web URI namespace maps directly to
-the repository namespace – in other words, if you ask for the page '/idefix',
-you will reach the note 'idefix' in the repository root.
+This isn't terribly interesting, we're just publishing YAML representations of
+notes. We might as well serve the files statically. But if the note has a method
+named "__wsgi__", it gets called to handle the request.
+  >>> write_note('/dynamic.note', """\
+  ... key: red
+  ... __wsgi__: !py |
+  ...   def __call__(note, environ, start_response):
+  ...     start_response('200 OK', [('Content-Type', 'text/plain')])
+  ...     return ['we have the %s key\\n' % note['key']]
+  ... """)
+  >>> env['PATH_INFO'] = '/dynamic'; server.run(repo_app)
+  HTTP/1.0 200 OK...
+  we have the red key
 
 And, of course, we clean up the test folder.
   >>> from shutil import rmtree

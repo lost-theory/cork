@@ -81,12 +81,18 @@ class CorkRepo(object):
         return len(self._get_note_list())
 
     def __getitem__(self, key):
+        return self.get(key)
+
+    def get(self, key, default=KeyError):
         # TODO: unsafe!
         try:
             raw_data = open('%s%s.note' % (self.repo_dir, key), 'rb').read()
         except IOError:
-            raise KeyError('Note "%s" not found in repository "%s"' %
-                    (key, self.repo_dir))
+            if default is KeyError:
+                raise KeyError('Note "%s" not found in repository "%s"' %
+                        (key, self.repo_dir))
+            else:
+                return default
         return CorkNote(yaml.load(raw_data), repo=self)
 
     def __contains__(self, key):
@@ -94,13 +100,15 @@ class CorkRepo(object):
 
     def wsgi(self, env, start_response):
         path = env['PATH_INFO']
-        try:
-            note = self[path]
-        except KeyError:
+        note = self.get(path, None)
+        if note is None:
             start_response("404 Not Found", [('Content-Type', 'text/plain')])
             return [path]
-        start_response("200 OK", [('Content-Type', 'text/plain')])
-        return [yaml.dump(dict(note))]
+        elif isinstance(note.get('__wsgi__', None), CorkMethod):
+            return note['__wsgi__'](env, start_response)
+        else:
+            start_response("200 OK", [('Content-Type', 'text/plain')])
+            return [yaml.dump(dict(note))]
 
 def method_constructor(loader, node):
     code = loader.construct_scalar(node)
