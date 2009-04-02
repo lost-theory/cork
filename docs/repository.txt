@@ -48,9 +48,9 @@ from within methods:
 
 Note are objects with data and methods. They can also inherit data and methods
 from other notes. Cork supports prototypal inheritance through the special
-__inherit__ property.
+_inherit_ property.
   >>> write_note('/second.note', """\
-  ... __inherit__: /first
+  ... _inherit_: /first
   ... wants: tomato
   ... """)
   >>> my_repo['/second']['ask']()

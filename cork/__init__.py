@@ -36,8 +36,8 @@ class CorkNote(dict):
         if dict.__contains__(self, key):
             return dict.get(self, key)
 
-        elif key != '__inherit__' and dict.__contains__(self, '__inherit__'):
-            superclass = self['__inherit__']
+        elif key != '_inherit_' and dict.__contains__(self, '_inherit_'):
+            superclass = self['_inherit_']
             if superclass not in self.repo:
                 raise NotImplementedError # TODO
 
@@ -165,8 +165,8 @@ class CorkRepo(object):
         if note is None:
             start_response("404 Not Found", [('Content-Type', 'text/plain')])
             return [path]
-        elif isinstance(note.get('__wsgi__', None), CorkMethod):
-            return note['__wsgi__'](env, start_response)
+        elif isinstance(note.get('_wsgi_', None), CorkMethod):
+            return note['_wsgi_'](env, start_response)
         else:
             start_response("200 OK", [('Content-Type', 'text/plain')])
             return [yaml.dump(dict(note))]

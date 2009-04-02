@@ -6,7 +6,7 @@ class InheritanceTest(unittest.TestCase):
     def test_inheritance(self):
         repo = CorkRepo()
         repo.add_vnote('/a', VirtualNote({'x': 'y'}))
-        repo.add_vnote('/b', VirtualNote({'__inherit__':'/a'}))
+        repo.add_vnote('/b', VirtualNote({'_inherit_':'/a'}))
         self.failUnlessEqual(repo['/a']['x'], 'y')
         self.failUnless('x' in repo['/b'])
         self.failUnlessEqual(repo['/b']['x'], 'y')

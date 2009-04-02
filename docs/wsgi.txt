@@ -36,10 +36,10 @@ error. Let's create the note and see what is returned.
 
 This isn't terribly interesting, we're just publishing YAML representations of
 notes. We might as well serve the files statically. But if the note has a method
-named "__wsgi__", it gets called to handle the request.
+named "_wsgi_", it gets called to handle the request.
   >>> write_note('/dynamic.note', """\
   ... key: red
-  ... __wsgi__: !py |
+  ... _wsgi_: !py |
   ...   def __call__(note, environ, start_response):
   ...     start_response('200 OK', [('Content-Type', 'text/plain')])
   ...     return ['we have the %s key\\n' % note['key']]
