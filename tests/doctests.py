@@ -2,13 +2,14 @@ import unittest
 import doctest
 from os.path import normpath, dirname, join
 
-suite = unittest.TestSuite()
-for fname in ['note_format.txt', 'repository.txt', 'wsgi.txt']:
+def doctest_to_unittest(fname):
     doc_file = normpath(join(dirname(__file__), '../docs/%s' % fname))
     text = open(doc_file, 'rb').read().decode('utf-8')
     doc_test = doctest.DocTestParser().get_doctest(text, {}, fname, fname, 0)
-    suite.addTest(doctest.DocTestCase(doc_test, optionflags=doctest.ELLIPSIS))
+    return doctest.DocTestCase(doc_test, optionflags=doctest.ELLIPSIS)
 
-if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(suite)
+suite = unittest.TestSuite()
+for fname in ['note_format.txt', 'repository.txt', 'wsgi.txt']:
+    suite.addTest(doctest_to_unittest(fname))
+
+if __name__ == '__main__': unittest.TextTestRunner().run(suite)
