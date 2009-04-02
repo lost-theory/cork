@@ -90,6 +90,14 @@ def note_constructor(loader, node):
     return CorkNote(value)
 yaml.add_constructor(u'!note', note_constructor)
 
+def _make_vnote_web():
+    def wsgi_method(note, environ, start_response):
+        from webob import Request
+        request = Request(environ)
+        response = note['_web_'](request)
+        return response(environ, start_response)
+    return VirtualNote({'_wsgi_': wsgi_method})
+
 class CorkMethod(object):
     def __init__(self, code, note=None):
         self.code = code
@@ -108,6 +116,7 @@ class CorkRepo(object):
     def __init__(self, repo_dir=None):
         self.repo_dir = repo_dir
         self.virt_notes = {}
+        self.add_vnote('_lib_/cork/web', _make_vnote_web())
 
     def add_vnote(self, path, note):
         self.virt_notes[path] = note
@@ -164,7 +173,7 @@ class CorkRepo(object):
         note = self.get(path, None)
         if note is None:
             start_response("404 Not Found", [('Content-Type', 'text/plain')])
-            return [path]
+            return ['Not found: ', path]
         elif isinstance(note.get('_wsgi_', None), CorkMethod):
             return note['_wsgi_'](env, start_response)
         else:

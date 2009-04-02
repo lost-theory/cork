@@ -48,6 +48,20 @@ named "_wsgi_", it gets called to handle the request.
   HTTP/1.0 200 OK...
   we have the red key
 
+You might not want to implement the WSGI protocol directly. In that case, if you
+install the webob package, Cork will happily use it. Inherit from _lib_/cork/web
+and write a method named "_web_":
+  >>> write_note('/web.note', """\
+  ... _inherit_: _lib_/cork/web
+  ... key: green
+  ... _web_: !py |
+  ...   def __call__(note, request):
+  ...     return request.ResponseClass('we have the %s key\\n' % note['key'])
+  ... """)
+  >>> env['PATH_INFO'] = '/web'; server.run(repo_app)
+  HTTP/1.0 200 OK...
+  we have the green key
+
 And, of course, we clean up the test folder.
   >>> from shutil import rmtree
   >>> rmtree(repo_dir)
