@@ -4,10 +4,14 @@ Cork
 == Description ==
 
 Cork aims to be a generic-purpose information repository that stores data in
-"notes" (YAML files) which may contain Python code. Planned features include a
-bootstrapper (to easily create a repository), a WSGI publisher (to interact with
-notes from e.g. a web browser) and prototypal inheritance (so notes can inherit
-each other's data and code).
+"notes" (YAML files). The notes form an object model with prototypal
+inheritance and methods are expressed as arbitrary Python code within the
+YAML document.
+
+Cork repositories are WSGI applications, so they can be used to create simple,
+ad-hoc applications with persistent data and straight-forward user interface.
+
+See the "docs" folder for examples of Cork in action.
 
 
 == Contribute ==
