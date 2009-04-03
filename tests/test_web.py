@@ -51,15 +51,15 @@ class VirtualNoteTest(unittest.TestCase):
         self.failUnlessEqual(output['body'], 'Hello world!a=b')
 
     def test_wsgi_in_repo(self):
-        repo = self.make_repo({'/vnote':self.make_vnote()})
+        repo = self.make_repo({'vnote':self.make_vnote()})
         self.failUnlessEqual(wsgi_test(repo.wsgi, '/nope')['status'], '404 Not Found')
         output = wsgi_test(repo.wsgi, '/vnote')
         self.failUnlessEqual(output['status'], '200 OK')
         self.failUnlessEqual(output['body'], 'Hello world!')
 
     def test_web(self):
-        repo = self.make_repo({'/vnote':self.make_vnote(),
-            '/web_vnote': self.make_web_vnote()})
+        repo = self.make_repo({'vnote':self.make_vnote(),
+            'web_vnote': self.make_web_vnote()})
 
         output = wsgi_test(repo.wsgi, '/web_vnote', 'action=404')
         self.failUnlessEqual(output['status'], '404 Not Found')

@@ -5,8 +5,8 @@ from cork import VirtualNote, CorkNote, CorkRepo
 class InheritanceTest(unittest.TestCase):
     def test_inheritance(self):
         repo = CorkRepo({})
-        repo.add_vnote('/a', VirtualNote({'x': 'y'}))
-        repo.add_vnote('/b', VirtualNote({'_inherit_':'/a'}))
+        repo.add_vnote('a', VirtualNote({'x': 'y'}))
+        repo.add_vnote('b', VirtualNote({'_inherit_':'/a'}))
         self.failUnlessEqual(repo['/a']['x'], 'y')
         self.failUnless('x' in repo['/b'])
         self.failUnlessEqual(repo['/b']['x'], 'y')
@@ -38,7 +38,7 @@ class VirtualNoteTest(unittest.TestCase):
     def test_vnote_in_repo(self):
         vnote = self.make_virt_note()
         repo = CorkRepo({})
-        repo.add_vnote('/vnote', vnote)
+        repo.add_vnote('vnote', vnote)
         self.failUnless('/vnote' in repo)
         self.failUnless(repo['/vnote'] is vnote)
         self.failUnless(repo['/vnote'].repo is repo)

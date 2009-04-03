@@ -119,8 +119,11 @@ class FsNoteResolver(object):
 
     def get(self, key, default):
         # TODO: unsafe!
+        path = os.path.join(self.repo_dir, key)
+        if os.path.isdir(path):
+            return open_repo(path)
         try:
-            raw_data = open('%s%s.note' % (self.repo_dir, key), 'rb').read()
+            raw_data = open('%s.note' % path, 'rb').read()
         except IOError:
             return default
         return CorkNote(yaml.load(raw_data))
@@ -132,7 +135,7 @@ class FsNoteResolver(object):
         #    notes.update(dirpath + filename for filename in filenames)
         for filename in os.listdir(self.repo_dir):
             if filename.endswith('.note'):
-                notes.append('/%s' % filename[:-5])
+                notes.append('%s' % filename[:-5])
         return notes
 
 class CorkRepo(object):
@@ -171,23 +174,40 @@ class CorkRepo(object):
         if note is not None:
             return note
         if default is KeyError:
-            raise KeyError('Note "%s" not found in repository "%s"' %
-                    (key, self.repo_dir))
+            # TODO: test this error
+            raise KeyError('Note "%s" not found in repository' % key)
         else:
             return default
 
     def traverse(self, note_ref):
+        if note_ref.startswith('/'):
+            # TODO: walk to root
+            note_ref = note_ref[1:]
+
         if note_ref in self.virt_notes:
             value = self.virt_notes[note_ref]
+            value.repo = self
+            return value
+
+        if '/' in note_ref:
+            note_ref, sub_note_ref = note_ref.split('/', 1)
         else:
-            value = self.notes_dict.get(note_ref, None)
+            sub_note_ref = None
+
+        value = self.notes_dict.get(note_ref, None)
+
+        if isinstance(value, CorkRepo):
+            assert(sub_note_ref) # TODO: test and improve
+            return value.traverse(sub_note_ref)
+
         if isinstance(value, CorkNote):
             # TODO: eek!
             value.repo = self
+
         return value
 
     def __contains__(self, key):
-        return key in self._get_note_list(include_virtual=True)
+        return self.traverse(key) is not None
 
     def wsgi(self, env, start_response):
         path = env['PATH_INFO']

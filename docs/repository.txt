@@ -25,7 +25,7 @@ pick them up automatically.
   ... tomato: red
   ... """)
   >>> my_repo.list_notes()
-  set(['/colors'])
+  set(['colors'])
 
 To get a hold of a note we use dict-like syntax:
   >>> my_repo['/colors']
