@@ -158,18 +158,24 @@ class CorkRepo(object):
         return self.get(key)
 
     def get(self, key, default=KeyError):
-        if key in self.virt_notes:
-            return self.virt_notes[key]
+        note = self.traverse(key)
+        if note is not None:
+            return note
+        if default is KeyError:
+            raise KeyError('Note "%s" not found in repository "%s"' %
+                    (key, self.repo_dir))
+        else:
+            return default
+
+    def traverse(self, note_ref):
+        if note_ref in self.virt_notes:
+            return self.virt_notes[note_ref]
 
         # TODO: unsafe!
         try:
-            raw_data = open('%s%s.note' % (self.repo_dir, key), 'rb').read()
+            raw_data = open('%s%s.note' % (self.repo_dir, note_ref), 'rb').read()
         except IOError:
-            if default is KeyError:
-                raise KeyError('Note "%s" not found in repository "%s"' %
-                        (key, self.repo_dir))
-            else:
-                return default
+            return None
         return CorkNote(yaml.load(raw_data), repo=self)
 
     def __contains__(self, key):

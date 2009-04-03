@@ -31,3 +31,10 @@ class DictRepoTest(unittest.TestCase):
         repo = make_cork_dict_repo(data_dict)
         self.failUnless('/n1' in repo)
         self.failUnlessEqual(repo['/n1']['x'], 13)
+
+    def test_traverse(self):
+        n1_note = CorkNote({})
+        repo = make_cork_dict_repo({
+            '/n1': n1_note,
+        })
+        self.failUnless(repo.traverse('/n1') is n1_note)
