@@ -1,3 +1,4 @@
+import os
 import yaml
 
 class CorkLookupError(KeyError):
@@ -112,16 +113,31 @@ class CorkMethod(object):
     def bind(self, note):
         return CorkMethod(self.code, note)
 
-def make_cork_dict_repo(data_dict):
-    """ to be merged in CorkRepo class """
-    repo = CorkRepo()
-    for key, value in data_dict.iteritems():
-        repo.add_vnote(key, value)
-    return repo
+class FsNoteResolver(object):
+    def __init__(self, repo_dir):
+        self.repo_dir = repo_dir
+
+    def get(self, key, default):
+        # TODO: unsafe!
+        try:
+            raw_data = open('%s%s.note' % (self.repo_dir, key), 'rb').read()
+        except IOError:
+            return default
+        return CorkNote(yaml.load(raw_data))
+
+    def keys(self):
+        notes = []
+        #for dirpath, dirnames, filenames in os.walk(self.repo_dir):
+        #    dirpath = dirpath[len(self.repo_dir):]
+        #    notes.update(dirpath + filename for filename in filenames)
+        for filename in os.listdir(self.repo_dir):
+            if filename.endswith('.note'):
+                notes.append('/%s' % filename[:-5])
+        return notes
 
 class CorkRepo(object):
-    def __init__(self, repo_dir=None):
-        self.repo_dir = repo_dir
+    def __init__(self, notes_dict):
+        self.notes_dict = notes_dict
         self.virt_notes = {}
         self.add_vnote('_lib_/cork/web', _make_vnote_web())
 
@@ -130,22 +146,15 @@ class CorkRepo(object):
         note.repo = self
 
     def __repr__(self):
-        if self.repo_dir is None:
-            return '<CorkRepo with no dir>'
-        return '<CorkRepo at "%s">' % self.repo_dir.encode('ascii', 'replace')
+        if isinstance(self.notes_dict, FsNoteResolver):
+            return '<CorkRepo at "%s">' % self.notes_dict.repo_dir.encode('ascii', 'replace')
+        return '<CorkRepo with no dir>'
 
     def _get_note_list(self, include_virtual=False):
-        import os
         notes = set()
         if include_virtual:
             notes.update(self.virt_notes.iterkeys())
-        #for dirpath, dirnames, filenames in os.walk(self.repo_dir):
-        #    dirpath = dirpath[len(self.repo_dir):]
-        #    notes.update(dirpath + filename for filename in filenames)
-        if self.repo_dir is not None:
-            for filename in os.listdir(self.repo_dir):
-                if filename.endswith('.note'):
-                    notes.add('/%s' % filename[:-5])
+        notes.update(self.notes_dict.keys())
         return notes
 
     def list_notes(self):
@@ -169,14 +178,13 @@ class CorkRepo(object):
 
     def traverse(self, note_ref):
         if note_ref in self.virt_notes:
-            return self.virt_notes[note_ref]
-
-        # TODO: unsafe!
-        try:
-            raw_data = open('%s%s.note' % (self.repo_dir, note_ref), 'rb').read()
-        except IOError:
-            return None
-        return CorkNote(yaml.load(raw_data), repo=self)
+            value = self.virt_notes[note_ref]
+        else:
+            value = self.notes_dict.get(note_ref, None)
+        if isinstance(value, CorkNote):
+            # TODO: eek!
+            value.repo = self
+        return value
 
     def __contains__(self, key):
         return key in self._get_note_list(include_virtual=True)
@@ -206,4 +214,4 @@ def parse_note(raw_data):
     return CorkNote(yaml.load(raw_data))
 
 def open_repo(repo_dir):
-    return CorkRepo(repo_dir)
+    return CorkRepo(FsNoteResolver(repo_dir))

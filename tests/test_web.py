@@ -39,7 +39,7 @@ class VirtualNoteTest(unittest.TestCase):
         return web_vnote
 
     def make_repo(self, notes):
-        repo = CorkRepo()
+        repo = CorkRepo({})
         for name, note in notes.iteritems():
             repo.add_vnote(name, note)
         return repo

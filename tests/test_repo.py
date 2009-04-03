@@ -1,7 +1,7 @@
 import unittest
 from os import path
 
-from cork import CorkNote, CorkRepo, make_cork_dict_repo, open_repo
+from cork import CorkNote, CorkRepo, open_repo
 
 class FilesystemTest(object):
     def write_test_file(self, filename, data):
@@ -28,13 +28,13 @@ class DictRepoTest(unittest.TestCase):
     def test_dict_repo(self):
         n1_note = CorkNote({'x': 13})
         data_dict = {'/n1': n1_note}
-        repo = make_cork_dict_repo(data_dict)
+        repo = CorkRepo(data_dict)
         self.failUnless('/n1' in repo)
         self.failUnlessEqual(repo['/n1']['x'], 13)
 
     def test_traverse(self):
         n1_note = CorkNote({})
-        repo = make_cork_dict_repo({
+        repo = CorkRepo({
             '/n1': n1_note,
         })
         self.failUnless(repo.traverse('/n1') is n1_note)
