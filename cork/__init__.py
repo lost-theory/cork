@@ -112,6 +112,13 @@ class CorkMethod(object):
     def bind(self, note):
         return CorkMethod(self.code, note)
 
+def make_cork_dict_repo(data_dict):
+    """ to be merged in CorkRepo class """
+    repo = CorkRepo()
+    for key, value in data_dict.iteritems():
+        repo.add_vnote(key, value)
+    return repo
+
 class CorkRepo(object):
     def __init__(self, repo_dir=None):
         self.repo_dir = repo_dir
