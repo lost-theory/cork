@@ -44,15 +44,19 @@ class DictRepoTest(unittest.TestCase):
 
     def test_traverse(self):
         n1_note = CorkNote({'a': 1})
-        n2_note = CorkNote({'b': 2})
+        f2_n2_note = CorkNote({'b': 2})
+        f2_index_note = CorkNote({'c': 3})
         repo = CorkRepo({
             'n1': n1_note,
             'f2': CorkRepo({
-                'n2': n2_note,
+                'n2': f2_n2_note,
+                '_index_': f2_index_note,
             })
         })
         self.failUnless(repo.traverse('/n1') is n1_note)
-        self.failUnless(repo.traverse('/f2/n2') is n2_note)
+        self.failUnless(repo.traverse('/f2/n2') is f2_n2_note)
         self.failUnless(repo.traverse('none') is None)
+        self.failUnless(repo.traverse('/f2/n2').repo.traverse('/n1') is n1_note)
+        self.failUnless(repo.traverse('/f2/') is f2_index_note)
 
 if __name__ == '__main__': unittest.main()

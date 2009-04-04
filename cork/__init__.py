@@ -130,9 +130,6 @@ class FsNoteResolver(object):
 
     def keys(self):
         notes = []
-        #for dirpath, dirnames, filenames in os.walk(self.repo_dir):
-        #    dirpath = dirpath[len(self.repo_dir):]
-        #    notes.update(dirpath + filename for filename in filenames)
         for filename in os.listdir(self.repo_dir):
             if filename.endswith('.note'):
                 notes.append('%s' % filename[:-5])
@@ -143,6 +140,7 @@ class CorkRepo(object):
         self.notes_dict = notes_dict
         self.virt_notes = {}
         self.add_vnote('_lib_/cork/web', _make_vnote_web())
+        self.parent_repo = None
 
     def add_vnote(self, path, note):
         self.virt_notes[path] = note
@@ -181,8 +179,10 @@ class CorkRepo(object):
 
     def traverse(self, note_ref):
         if note_ref.startswith('/'):
-            # TODO: walk to root
-            note_ref = note_ref[1:]
+            repo = self
+            while repo.parent_repo is not None:
+                repo = repo.parent_repo
+            return repo.traverse(note_ref[1:])
 
         if note_ref in self.virt_notes:
             value = self.virt_notes[note_ref]
@@ -197,11 +197,13 @@ class CorkRepo(object):
         value = self.notes_dict.get(note_ref, None)
 
         if isinstance(value, CorkRepo):
-            assert(sub_note_ref) # TODO: test and improve
+            if sub_note_ref == '':
+                sub_note_ref = '_index_'
+            value.parent_repo = self # TODO: set parent_repo on repo creation
             return value.traverse(sub_note_ref)
 
         if isinstance(value, CorkNote):
-            # TODO: eek!
+            # TODO: set parent repo on note creation
             value.repo = self
 
         return value
