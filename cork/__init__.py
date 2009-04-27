@@ -1,8 +1,7 @@
 import os
 import yaml
 
-class CorkLookupError(KeyError):
-    pass
+class CorkLookupError(KeyError): pass
 
 class CorkNote(dict):
     def __init__(self, content={}, inherit=[], location=None, parent_note=None):
@@ -96,6 +95,7 @@ class CorkNote(dict):
         return val
 
     def walk(self, note_ref):
+        from library import lib
         if note_ref in lib:
             return lib[note_ref]
 
@@ -119,42 +119,6 @@ class CorkNote(dict):
         else:
             return value.walk(sub_note_ref)
 
-def _make_vnote_basenote():
-    def get_child_method(note, child_name):
-        inline_kids = note.get('_children_', {})
-        if child_name in inline_kids:
-            return inline_kids[child_name]
-    base_note = VirtualNote({'_get_child_': get_child_method, '_children_': {}})
-    base_note.inherit = []
-    return base_note
-
-def _make_vnote_fsnote():
-    def get_child_method(note, child_name):
-        inline_kids = note.get('_children_', {})
-        if child_name in inline_kids:
-            return inline_kids[child_name]
-        child_location = '%s/%s' % (note.location, child_name)
-        child_paths = [
-             child_location + '.note',
-             child_location + '/_index_.note',
-        ]
-        for child_path in child_paths:
-            if os.path.isfile(child_path):
-                if os.path.isfile(child_path):
-                    f = open(child_path)
-                    raw_data = f.read()
-                    f.close()
-                    return CorkNote(yaml.load(raw_data),
-                        inherit=['_lib_/cork/fsnote'],
-                        parent_note=note,
-                        location=child_location)
-        if os.path.isdir(child_location):
-            return CorkNote(
-                inherit=['_lib_/cork/fsnote'],
-                parent_note=note,
-                location=child_location)
-    return VirtualNote({'_get_child_': get_child_method})
-
 class CorkMethod(object):
     def __init__(self, code, note=None):
         self.code = code
@@ -168,24 +132,6 @@ class CorkMethod(object):
 
     def bind(self, note):
         return CorkMethod(self.code, note)
-
-def method_constructor(loader, node):
-    code = loader.construct_scalar(node)
-    filename = '<CorkMethod code>'
-    c = compile(code, filename, 'exec')
-    d = {}
-    eval(c, d)
-    return CorkMethod(d['__call__'])
-yaml.add_constructor(u'!py', method_constructor)
-
-def parse_note(raw_data):
-    return CorkNote(content=yaml.load(raw_data))
-
-def open_repo(repo_dir):
-    if repo_dir.endswith('/'):
-        repo_dir = repo_dir[:-1]
-    root_note = CorkNote(location=repo_dir, inherit=['_lib_/cork/fsnote'])
-    return CorkRepo(root_note)
 
 class CorkRepo(object):
     def __init__(self, root_note):
@@ -213,28 +159,25 @@ class CorkRepo(object):
             start_response("200 OK", [('Content-Type', 'text/plain')])
             return [yaml.dump(dict(note))]
 
-class VirtualNote(CorkNote):
-    def __init__(self, contents):
-        for name in contents:
-            if callable(contents[name]):
-                contents[name] = CorkMethod(contents[name])
-        super(VirtualNote, self).__init__(contents)
+def method_constructor(loader, node):
+    code = loader.construct_scalar(node)
+    filename = '<CorkMethod code>'
+    c = compile(code, filename, 'exec')
+    d = {}
+    eval(c, d)
+    return CorkMethod(d['__call__'])
+yaml.add_constructor(u'!py', method_constructor)
 
 def note_constructor(loader, node):
     value = loader.construct_mapping(node)
     return CorkNote(value)
 yaml.add_constructor(u'!note', note_constructor)
 
-def _make_vnote_web():
-    def wsgi_method(note, environ, start_response):
-        from webob import Request
-        request = Request(environ)
-        response = note['_web_'](request)
-        return response(environ, start_response)
-    return VirtualNote({'_wsgi_': wsgi_method})
+def parse_note(raw_data):
+    return CorkNote(content=yaml.load(raw_data))
 
-lib = {
-    '_lib_/cork/basenote': _make_vnote_basenote(),
-    '_lib_/cork/fsnote': _make_vnote_fsnote(),
-    '_lib_/cork/web': _make_vnote_web(),
-}
+def open_repo(repo_dir):
+    if repo_dir.endswith('/'):
+        repo_dir = repo_dir[:-1]
+    root_note = CorkNote(location=repo_dir, inherit=['_lib_/cork/fsnote'])
+    return CorkRepo(root_note)
