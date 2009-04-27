@@ -84,15 +84,7 @@ class CorkNote(dict):
         return val
 
     def __getitem__(self, key):
-        try:
-            val = self._lookup(key)
-        except CorkLookupError:
-            raise KeyError('CorkNote has no member named "%s"' % key)
-
-        if isinstance(val, CorkMethod):
-            val = val.bind(self)
-
-        return val
+        return self.get(key)
 
     def walk(self, note_ref):
         from library import lib
