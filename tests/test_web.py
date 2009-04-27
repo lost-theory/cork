@@ -3,7 +3,7 @@ from wsgiref.validate import validator
 from wsgiref.util import setup_testing_defaults
 from cStringIO import StringIO
 
-from cork import VirtualNote, CorkRepo
+from cork import CorkNote, CorkRepo, CorkMethod
 
 def wsgi_test(app, path='/', query_string=''):
     env = {'PATH_INFO': path, 'SCRIPT_NAME': '', 'QUERY_STRING': query_string}
@@ -21,7 +21,7 @@ class VirtualNoteTest(unittest.TestCase):
         def wsgi_method(note, environ, start_response):
             start_response('200 OK', [('Content-Type', 'text/plain')])
             return ['Hello world!', environ['QUERY_STRING']]
-        vnote = VirtualNote({'_wsgi_': wsgi_method})
+        vnote = CorkNote({'_wsgi_': CorkMethod(wsgi_method)})
         return vnote
 
     def make_web_vnote(self):
@@ -32,17 +32,18 @@ class VirtualNoteTest(unittest.TestCase):
                 return Response(status=404)
             elif action == 'ping':
                 return Response('pong')
-        web_vnote = VirtualNote({
+        web_vnote = CorkNote({
             '_inherit_': '_lib_/cork/web',
-            '_web_': web_method,
+            '_web_': CorkMethod(web_method),
         })
         return web_vnote
 
-    def make_repo(self, notes):
-        repo = CorkRepo({})
-        for name, note in notes.iteritems():
-            repo.add_vnote(name, note)
-        return repo
+    def make_repo(self):
+        # TODO: drop the CorkRepo wrapper
+        return CorkRepo(CorkNote({'_children_': {
+            'vnote': self.make_vnote(),
+            'web_vnote': self.make_web_vnote(),
+        }}))
 
     def test_wsgi(self):
         vnote = self.make_vnote()
@@ -51,15 +52,14 @@ class VirtualNoteTest(unittest.TestCase):
         self.failUnlessEqual(output['body'], 'Hello world!a=b')
 
     def test_wsgi_in_repo(self):
-        repo = self.make_repo({'vnote':self.make_vnote()})
+        repo = self.make_repo()
         self.failUnlessEqual(wsgi_test(repo.wsgi, '/nope')['status'], '404 Not Found')
         output = wsgi_test(repo.wsgi, '/vnote')
         self.failUnlessEqual(output['status'], '200 OK')
         self.failUnlessEqual(output['body'], 'Hello world!')
 
     def test_web(self):
-        repo = self.make_repo({'vnote':self.make_vnote(),
-            'web_vnote': self.make_web_vnote()})
+        repo = self.make_repo()
 
         output = wsgi_test(repo.wsgi, '/web_vnote', 'action=404')
         self.failUnlessEqual(output['status'], '404 Not Found')

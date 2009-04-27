@@ -12,25 +12,18 @@ looks like.
   >>> my_repo = cork.open_repo(repo_dir)
   >>> my_repo
   <CorkRepo at "...">
-  >>> my_repo.list_notes()
-  set([])
-  >>> len(my_repo)
-  0
 
 Right now my_repo is empty. If we create files in that folder, my_repo will
-pick them up automatically.
+pick them up automatically. We grab notes using the "walk" method. To get a hold
+of note contents we use dict-like syntax.
   >>> write_note('/colors.note', """\
   ... apple: green
   ... banana: yellow
   ... tomato: red
   ... """)
-  >>> my_repo.list_notes()
-  set(['colors'])
-
-To get a hold of a note we use dict-like syntax:
-  >>> my_repo['/colors']
+  >>> my_repo.walk('/colors')
   <CorkNote at 0x...>
-  >>> my_repo['/colors']['apple']
+  >>> my_repo.walk('/colors')['apple']
   'green'
 
 Notes remember which repository they're part of, so we can access other notes
@@ -41,9 +34,9 @@ from within methods:
   ... ask: !py |
   ...   def __call__(note):
   ...     want = note['wants']
-  ...     return 'give me something %s' % note.repo['/colors'][want]
+  ...     return 'give me something %s' % note.walk('/colors')[want]
   ... """)
-  >>> my_repo['/first']['ask']()
+  >>> my_repo.walk('/first')['ask']()
   'give me something yellow'
 
 Note are objects with data and methods. They can also inherit data and methods
@@ -53,9 +46,9 @@ _inherit_ property.
   ... _inherit_: /first
   ... wants: tomato
   ... """)
-  >>> my_repo['/second']['ask']()
+  >>> my_repo.walk('/second')['ask']()
   'give me something red'
-  >>> my_repo['/second']['also_wants']
+  >>> my_repo.walk('/second')['also_wants']
   'orange'
 
 Finally, we'll clean up that temporary folder we made in the beginning.

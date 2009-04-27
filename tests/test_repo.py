@@ -3,7 +3,7 @@ import os, os.path
 
 from cork import CorkNote, CorkRepo, open_repo
 
-class FilesystemTest(object):
+class RepoTest(unittest.TestCase):
     def write_test_file(self, filepath, data):
         folderpath = os.path.join(self._temp_dir, os.path.split(filepath)[0])
         if not os.path.isdir(folderpath):
@@ -20,43 +20,29 @@ class FilesystemTest(object):
         from shutil import rmtree
         rmtree(self._temp_dir)
 
-class FsRepoTest(FilesystemTest, unittest.TestCase):
     def test_fs_repo(self):
         self.write_test_file('n1.note', 'x: 13\n')
         self.write_test_file('f2/n2.note', 'y: 42\n')
         repo = open_repo(self._temp_dir)
-        self.failUnless('/n1' in repo)
-        self.failUnless('/f2/n2' in repo)
-        self.failIf('/n0' in repo)
-        self.failUnlessEqual(repo['/n1']['x'], 13)
-        self.failUnlessEqual(repo['/f2/n2']['y'], 42)
-        self.failUnlessRaises(KeyError, lambda: repo['none'])
-        self.failUnlessRaises(KeyError, lambda: repo['/f2/none'])
-
-class DictRepoTest(unittest.TestCase):
-    def test_dict_repo(self):
-        n1_note = CorkNote({'x': 13})
-        data_dict = {'n1': n1_note}
-        repo = CorkRepo(data_dict)
-        self.failUnless('/n1' in repo)
-        self.failIf('/n0' in repo)
-        self.failUnlessEqual(repo['/n1']['x'], 13)
+        # TODO: self.failUnless('/n1' in repo)
+        # TODO: self.failUnless('/f2/n2' in repo)
+        # TODO: self.failIf('/n0' in repo)
+        self.failUnlessEqual(repo.walk('/n1')['x'], 13)
+        self.failUnlessEqual(repo.walk('/f2/n2')['y'], 42)
+        self.failUnlessRaises(KeyError, lambda: repo.walk('none'))
+        self.failUnlessRaises(KeyError, lambda: repo.walk('/f2/none'))
 
     def test_traverse(self):
-        n1_note = CorkNote({'a': 1})
-        f2_n2_note = CorkNote({'b': 2})
-        f2_index_note = CorkNote({'c': 3})
-        repo = CorkRepo({
-            'n1': n1_note,
-            'f2': CorkRepo({
-                'n2': f2_n2_note,
-                '_index_': f2_index_note,
-            })
-        })
-        self.failUnless(repo.traverse('/n1') is n1_note)
-        self.failUnless(repo.traverse('/f2/n2') is f2_n2_note)
-        self.failUnless(repo.traverse('none') is None)
-        self.failUnless(repo.traverse('/f2/n2').repo.traverse('/n1') is n1_note)
-        self.failUnless(repo.traverse('/f2/') is f2_index_note)
+        repo = CorkNote({'_children_': {
+            'n1': CorkNote({'a': 1}),
+            'f2': CorkNote({'a': 2, '_children_': {
+                'n2': CorkNote({'a': 3}),
+            }}),
+        }})
+        self.failUnlessEqual(repo.walk('/n1')['a'], 1)
+        self.failUnlessEqual(repo.walk('/f2')['a'], 2)
+        self.failUnlessEqual(repo.walk('/f2/n2')['a'], 3)
+        self.failUnlessEqual(repo.walk('/f2/n2').walk('/n1')['a'], 1)
+        self.failUnlessRaises(KeyError, lambda: repo.walk('none'))
 
 if __name__ == '__main__': unittest.main()

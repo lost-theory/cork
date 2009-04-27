@@ -1,46 +1,40 @@
 import unittest
 
-from cork import VirtualNote, CorkNote, CorkRepo
+from cork import CorkNote, CorkMethod
 
 class InheritanceTest(unittest.TestCase):
     def test_inheritance(self):
-        repo = CorkRepo({})
-        repo.add_vnote('a', VirtualNote({'x': 'y'}))
-        repo.add_vnote('b', VirtualNote({'_inherit_':'/a'}))
-        self.failUnlessEqual(repo['/a']['x'], 'y')
-        self.failUnless('x' in repo['/b'])
-        self.failUnlessEqual(repo['/b']['x'], 'y')
-        self.failUnlessEqual(repo['/b'].get('x'), 'y')
-        self.failUnlessRaises(KeyError, lambda: repo['/b'].get('z'))
+        repo = CorkNote({'_children_': {
+            'a': CorkNote({'x': 'y'}),
+            'b': CorkNote({'_inherit_':'/a'}),
+        }})
+        self.failUnlessEqual(repo.walk('/a')['x'], 'y')
+        self.failUnless('x' in repo.walk('/b'))
+        self.failUnlessEqual(repo.walk('/b')['x'], 'y')
+        self.failUnlessEqual(repo.walk('/b').get('x'), 'y')
+        self.failUnlessRaises(KeyError, lambda: repo.walk('/b').get('z'))
 
 class VirtualNoteTest(unittest.TestCase):
-    def make_virt_note(self):
-        def add_method(note, a, b):
-            return a+b
-        def get_x_method(note):
-            return note['x']
-        vnote = VirtualNote({
+    def setUp(self):
+        self.vnote = CorkNote({
             'x': 13,
-            'add': add_method,
-            'get_x': get_x_method,
+            'add': CorkMethod(lambda note, a, b: a+b),
+            'get_x': CorkMethod(lambda note: note['x']),
         })
-        return vnote
+        self.repo = CorkNote({'_children_': {
+            'vnote': self.vnote,
+        }})
 
     def test_vnote(self):
-        vnote = self.make_virt_note()
-        self.failUnless(isinstance(vnote, CorkNote))
-        self.failUnlessEqual(vnote['x'], 13)
-        self.failUnlessEqual(vnote.get('x'), 13)
-        self.failUnlessEqual(vnote.get('y', 0), 0)
-        self.failUnlessEqual(vnote['add'](1, 2), 3)
-        self.failUnlessEqual(vnote['get_x'](), 13)
+        self.failUnless(isinstance(self.vnote, CorkNote))
+        self.failUnlessEqual(self.vnote['x'], 13)
+        self.failUnlessEqual(self.vnote.get('x'), 13)
+        self.failUnlessEqual(self.vnote.get('y', 0), 0)
+        self.failUnlessEqual(self.vnote['add'](1, 2), 3)
+        self.failUnlessEqual(self.vnote['get_x'](), 13)
 
     def test_vnote_in_repo(self):
-        vnote = self.make_virt_note()
-        repo = CorkRepo({})
-        repo.add_vnote('vnote', vnote)
-        self.failUnless('/vnote' in repo)
-        self.failUnless(repo['/vnote'] is vnote)
-        self.failUnless(repo['/vnote'].repo is repo)
+        self.failUnless(self.repo.walk('/vnote'))
+        self.failUnless(self.repo.walk('/vnote') is self.vnote)
 
 if __name__ == '__main__': unittest.main()
