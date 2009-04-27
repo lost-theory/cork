@@ -22,7 +22,7 @@ class CorkNote(dict):
             if key == '_children_':
                 for child_name in value:
                     if not isinstance(value[child_name], CorkNote):
-                        value[child_name] = CorkNote(value)
+                        value[child_name] = CorkNote(value[child_name])
                     value[child_name].parent_note = self
 
             elif isinstance(value, CorkMethod):

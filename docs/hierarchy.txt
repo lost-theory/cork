@@ -1,0 +1,58 @@
+A Cork repository need not be flat. Notes can have child notes which can be
+written inline or as separate files.
+  >>> import cork
+  >>> from tempfile import mkdtemp
+  >>> repo_dir = mkdtemp()
+  >>> def write_note(name, data):
+  ...   f = open(repo_dir + name, 'wb')
+  ...   f.write(data.encode('utf-8'))
+  ...   f.close()
+  ... 
+  >>> my_repo = cork.open_repo(repo_dir)
+  >>> write_note('/father.note', """\
+  ... name: Anakin
+  ... """)
+
+Let's create a child note for 'father' as a separate note file. We name it
+'son.note' and place it inside a folder named 'father', next to the
+'father.note' file created earlier.
+  >>> import os
+  >>> os.mkdir(repo_dir + '/father')
+  >>> write_note('/father/son.note', """\
+  ... name: Luke
+  ... """)
+  >>> os.listdir(repo_dir)
+  ['father', 'father.note']
+  >>> os.listdir(repo_dir + '/father')
+  ['son.note']
+  >>> my_repo.walk('/father')['name']
+  'Anakin'
+  >>> my_repo.walk('/father/son')['name']
+  'Luke'
+
+Child notes can be written inline too.
+  >>> write_note('/family.note', """\
+  ... who: dad
+  ... _children_:
+  ...   kid1:
+  ...     who: first kid
+  ...   kid2:
+  ...     who: second kid
+  ... """)
+  >>> my_repo.walk('/family')['who']
+  'dad'
+  >>> my_repo.walk('/family/kid1')['who']
+  'first kid'
+
+There's another interesting way of writing note files which might be useful in
+some cases (e.g. to provide a custom repository root node):
+  >>> os.mkdir(repo_dir + '/other')
+  >>> write_note('/other/_index_.note', """\
+  ... hello: world
+  ... """)
+  >>> my_repo.walk('/other')['hello']
+  'world'
+
+And we clean up the test files.
+  >>> from shutil import rmtree
+  >>> rmtree(repo_dir)
