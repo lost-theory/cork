@@ -10,7 +10,6 @@ class CorkNote(dict):
         self.parent_note = parent_note
         self.update(content)
         self.lookup_cache = {}
-        # TODO: keyorder is not tested
 
         if isinstance(content, list):
             keyorder = []
@@ -30,16 +29,25 @@ class CorkNote(dict):
 
             self[key] = value
 
-            if keyorder:
+            if keyorder is not None:
                 keyorder.append(key)
 
         self.keyorder = keyorder
 
     def iteritems(self):
-        if self.keyorder is None:
-            return dict.iteritems(self)
-        else:
-            return [(key, self[key]) for key in self.keyorder]
+        for key in self.iterkeys():
+            yield (key, self[key])
+
+    def items(self):
+        return list(self.iteritems())
+
+    def iterkeys(self):
+        if self.keyorder is not None:
+            return self.keyorder.__iter__()
+        return dict.iterkeys(self)
+
+    def keys(self):
+        return list(self.iterkeys())
 
     def __repr__(self):
         return '<CorkNote at 0x%x>' % id(self)

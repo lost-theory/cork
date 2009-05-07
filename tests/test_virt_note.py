@@ -48,4 +48,19 @@ class VirtualNoteTest(unittest.TestCase):
         self.failUnless(self.repo.walk('/vnote'))
         self.failUnless(self.repo.walk('/vnote') is self.vnote)
 
+    def test_keyorder(self):
+        note = CorkNote([
+            ('a', ''),
+            ('b', ''),
+            ('c', ''),
+            ('d', ''),
+        ])
+
+        order = ['a', 'b', 'c', 'd']
+        self.failUnlessEqual(note.keyorder, order)
+        self.failUnlessEqual(list(k for k,v in note.iteritems()), order)
+        self.failUnlessEqual(list(k for k,v in note.items()), order)
+        self.failUnlessEqual(list(note.iterkeys()), order)
+        self.failUnlessEqual(list(note.keys()), order)
+
 if __name__ == '__main__': unittest.main()
