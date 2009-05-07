@@ -33,7 +33,11 @@ def _fsnote_get_child(note, child_name):
     inline_kids = note.get('_children_', {})
     if child_name in inline_kids:
         return inline_kids[child_name]
+
     child_location = '%s/%s' % (note.location, child_name)
+    if not hasattr(note, '_fsnote_child_cache'):
+        note._fsnote_child_cache = {}
+
     child_paths = [
          child_location + '.note',
          child_location + '/_index_.note',
@@ -41,16 +45,26 @@ def _fsnote_get_child(note, child_name):
     for child_path in child_paths:
         if os.path.isfile(child_path):
             if os.path.isfile(child_path):
+                # TODO: work with filehandles from this point on; should be safer
+                child = note._fsnote_child_cache.get(child_path, None)
+                mtime = os.stat(child_path).st_mtime
+                if child is not None and mtime == child._fsnote_mtime:
+                    return child
                 f = open(child_path)
                 raw_data = f.read()
                 f.close()
-                return CorkNote(yaml.load(raw_data),
-                    inherit=['_lib_/cork/fsnote'],
-                    parent_note=note,
-                    location=child_location)
-    if os.path.isdir(child_location):
-        return CorkNote(
-            inherit=['_lib_/cork/fsnote'],
-            parent_note=note,
-            location=child_location)
+                content = yaml.load(raw_data)
+                break
+    else:
+        if not os.path.isdir(child_location):
+            return None
+        child_path = child_location
+        mtime = os.stat(child_path).st_mtime
+        content = {}
+
+    child = CorkNote(content, inherit=['_lib_/cork/fsnote'],
+        parent_note=note, location=child_location)
+    child._fsnote_mtime = mtime
+    note._fsnote_child_cache[child_path] = child
+    return child
 lib['_lib_/cork/fsnote'] = CorkNote({'_get_child_': CorkMethod(_fsnote_get_child)})
