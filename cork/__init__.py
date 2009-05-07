@@ -9,6 +9,7 @@ class CorkNote(dict):
         self.location = location
         self.parent_note = parent_note
         self.update(content)
+        self.lookup_cache = {}
         # TODO: keyorder is not tested
 
         if isinstance(content, list):
@@ -47,6 +48,13 @@ class CorkNote(dict):
         if dict.__contains__(self, key):
             return dict.get(self, key)
 
+        elif key in self.lookup_cache:
+            value = self.lookup_cache[key]
+            if value is None:
+                pass # we found a lookup loop
+            else:
+                return value
+
         elif key != '_inherit_':
             explicit_inherit = dict.get(self, '_inherit_', None)
             if explicit_inherit:
@@ -56,7 +64,10 @@ class CorkNote(dict):
             mro = explicit_inherit + self.inherit
             for superclass in mro:
                 try:
-                    return self.walk(superclass)[key]
+                    self.lookup_cache[key] = None # set a flag to catch loops
+                    value = self.walk(superclass)[key]
+                    self.lookup_cache[key] = value
+                    return value
                 except (KeyError, CorkLookupError), e:
                     pass
 

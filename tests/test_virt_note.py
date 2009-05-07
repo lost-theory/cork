@@ -14,6 +14,17 @@ class InheritanceTest(unittest.TestCase):
         self.failUnlessEqual(repo.walk('/b').get('x'), 'y')
         self.failUnlessRaises(KeyError, lambda: repo.walk('/b').get('z'))
 
+    def test_inheritance_loop(self):
+        repo = CorkNote({'_children_': {
+            'a': CorkNote({'_inherit_':'/a/b', '_children_': {
+                'b': CorkNote({'x': 'y'}),
+            }}),
+        }})
+        try:
+            self.failUnlessEqual(repo.walk('/a')['x'], 'y')
+        except RuntimeError, e:
+            self.fail('Should not raise exception - "%s"' % e)
+
 class VirtualNoteTest(unittest.TestCase):
     def setUp(self):
         self.vnote = CorkNote({
