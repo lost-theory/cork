@@ -54,4 +54,15 @@ class RepoTest(unittest.TestCase):
         self.failUnlessEqual(repo.walk('/f2/n2').walk('/n1')['a'], 1)
         self.failUnlessRaises(KeyError, lambda: repo.walk('none'))
 
+    def test_save_load(self):
+        self.write_test_file('n1.note', 'x: 13\n')
+        repo = open_repo(self._temp_dir)
+        n1 = repo.walk('/n1')
+        test_data = {'a': 'b', 'c': ['x', 'y', 'z', {'u':'v'}]}
+        n1['y'] = test_data
+        n1['_save_']()
+        repo2 = open_repo(self._temp_dir)
+        loaded_data = repo2.walk('/n1')['y']
+        self.failUnlessEqual(test_data, loaded_data)
+
 if __name__ == '__main__': unittest.main()

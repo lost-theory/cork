@@ -58,13 +58,23 @@ def _fsnote_get_child(note, child_name):
     else:
         if not os.path.isdir(child_location):
             return None
-        child_path = child_location
-        mtime = os.stat(child_path).st_mtime
+        child_path = None
+        mtime = os.stat(child_location).st_mtime
         content = {}
 
     child = CorkNote(content, inherit=['_lib_/cork/fsnote'],
         parent_note=note, location=child_location)
     child._fsnote_mtime = mtime
-    note._fsnote_child_cache[child_path] = child
+    child._fsnote_path = child_path # or child_location + '/_index_.note'
+    note._fsnote_child_cache[child_path or child_location] = child
     return child
-lib['_lib_/cork/fsnote'] = CorkNote({'_get_child_': CorkMethod(_fsnote_get_child)})
+
+def _fsnote_save(note):
+    f = open(note._fsnote_path, 'wb')
+    f.write(yaml.dump(dict(note)))
+    f.close()
+
+lib['_lib_/cork/fsnote'] = CorkNote({
+    '_get_child_': CorkMethod(_fsnote_get_child),
+    '_save_': CorkMethod(_fsnote_save),
+})
