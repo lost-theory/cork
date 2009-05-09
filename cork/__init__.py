@@ -122,10 +122,13 @@ class CorkNote(dict):
             sub_note_ref = None
 
         if note_ref == '..':
-            if self.parent_note:
-                return self.parent_note.walk(sub_note_ref)
+            parent = self.parent_note
+            if parent is None:
+                parent = self
+            if sub_note_ref is None:
+                return parent
             else:
-                return self.walk(sub_note_ref)
+                return parent.walk(sub_note_ref)
 
         value = self['_get_child_'](note_ref)
         if value is None:

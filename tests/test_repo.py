@@ -45,14 +45,19 @@ class RepoTest(unittest.TestCase):
         repo = CorkNote({'_children_': {
             'n1': CorkNote({'a': 1}),
             'f2': CorkNote({'a': 2, '_children_': {
-                'n2': CorkNote({'a': 3}),
+                'n2': CorkNote({'a': 3, '_children_': {
+                    'n3': CorkNote({'a': 4}),
+                }}),
             }}),
         }})
         self.failUnlessEqual(repo.walk('/n1')['a'], 1)
         self.failUnlessEqual(repo.walk('/f2')['a'], 2)
         self.failUnlessEqual(repo.walk('/f2/n2')['a'], 3)
         self.failUnlessEqual(repo.walk('/f2/n2').walk('/n1')['a'], 1)
+        self.failUnlessEqual(repo.walk('/f2/n2').walk('..')['a'], 2)
+        self.failUnlessEqual(repo.walk('/f2/n2/n3').walk('../..')['a'], 2)
         self.failUnlessEqual(repo.walk('/f2/n2').walk('../../n1')['a'], 1)
+        self.failUnlessEqual(repo.walk('/f2/n2').walk('../../../../n1')['a'], 1)
         self.failUnlessRaises(KeyError, lambda: repo.walk('none'))
 
     def test_save_load(self):
