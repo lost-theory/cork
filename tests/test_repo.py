@@ -52,6 +52,7 @@ class RepoTest(unittest.TestCase):
         self.failUnlessEqual(repo.walk('/f2')['a'], 2)
         self.failUnlessEqual(repo.walk('/f2/n2')['a'], 3)
         self.failUnlessEqual(repo.walk('/f2/n2').walk('/n1')['a'], 1)
+        self.failUnlessEqual(repo.walk('/f2/n2').walk('../../n1')['a'], 1)
         self.failUnlessRaises(KeyError, lambda: repo.walk('none'))
 
     def test_save_load(self):
